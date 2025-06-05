@@ -3,8 +3,8 @@
 <!-- Repo image -->
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="./static/img/github-header-img.png">
-    <img src="./static/img/github-header-img.png" height="200">
+    <source media="(prefers-color-scheme: dark)" srcset="./static/img/github-header-image.png">
+    <img src="./static/img/github-header-image.png" height="200">
   </picture>
 </p>
 

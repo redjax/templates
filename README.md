@@ -4,7 +4,7 @@
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="./static/img/github-header-image.png">
-    <img src="./static/img/github-header-image.png" height="200">
+    <img src="./static/img/github-header-image.png" height="100">
   </picture>
 </p>
 

@@ -9,6 +9,7 @@ Automate the process of building a Go project for multiple platform, creating a 
 
 ## Setup
 
+- Enable Actions in your Github repository ([instructions](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/enabling-features-for-your-repository/managing-github-actions-settings-for-a-repository)).
 - Copy [the pipeline's contents](./release.yml) into a file at `.github/workflows/release.yml`.
   - You can name the file whatever you want, as long as it ends with `.yml/.yaml` and exists under `.github/workflows/`
 - Edit the pipeline file.
@@ -21,7 +22,6 @@ Automate the process of building a Go project for multiple platform, creating a 
 
 ## Usage
 
-- Enable Actions in your Github repository ([instructions](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/enabling-features-for-your-repository/managing-github-actions-settings-for-a-repository)).
 - Run the pipeline from Actions.
   - Choose release type (version bump):
     - `major` --> `vX.o.o`

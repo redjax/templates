@@ -1,0 +1,81 @@
+---
+############################################################
+# Automatically merge a PR, either created by the pipeline #
+# or by a specific name/user/etc.                          #
+#                                                          #
+# Pipeline requires a PAT with READ/WRITE access.     #
+############################################################
+
+name: Create and merge PR
+
+on:
+  ## Manual trigger
+  # workflow_dispatch:
+  ## Scheduled trigger
+  schedule:
+    ## Every 6 hours (4x daily)
+    - cron: "0 0,6 * * *"
+
+jobs:
+  update-file:
+    runs-on: ubuntu-latest
+    outputs:
+      pr_number: ${{ steps.create_pr.outputs.pull-request-number }}
+
+    steps:
+      ## Change the steps below to match your needs, but keep the
+      #  repo, commit changes, and create PR steps.
+
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Append timestamp to demo.txt
+        run: |
+          echo "Update at $(date -u)" >> demo.txt
+
+      - name: Check for changes
+        id: diff
+        run: |
+          git add demo.txt
+          if git diff --cached --quiet; then
+            echo "changed=false" >> $GITHUB_OUTPUT
+          else
+            echo "changed=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Commit changes
+        if: steps.diff.outputs.changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "chore: update demo.txt with timestamp"
+
+      - name: Create or update Pull Request
+        id: create_pr
+        if: steps.diff.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GH_READWRITE_PAT }}
+          branch: chore/demo-update
+          base: main
+          title: "chore: update demo.txt"
+          body: "Automated update to demo.txt with timestamp"
+          commit-message: "chore: update demo.txt with timestamp"
+          add-paths: demo.txt
+
+  ## Job to automatically merge PR created in the last step
+  auto-merge:
+    runs-on: ubuntu-latest
+    needs: update-file
+    if: needs.update-file.outputs.pr_number != ''
+    steps:
+      - name: Install GitHub CLI
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gh
+
+      - name: Auto-merge PR
+        env:
+          GH_TOKEN: ${{ secrets.GH_READWRITE_PAT }}
+        run: |
+          gh pr merge ${{ needs.update-file.outputs.pr_number }} --auto --squash

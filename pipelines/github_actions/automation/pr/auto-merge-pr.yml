@@ -88,6 +88,14 @@ jobs:
         run: |
           gh pr merge ${{ needs.update-file.outputs.pr_number }} --auto --squash || exit 0
 
+      - name: Check if PR merged
+        id: pr-status
+        env:
+          GH_TOKEN: ${{ secrets.GH_READWRITE_PAT }}
+        run: |
+          merged=$(gh pr view ${{ needs.update-submodules.outputs.pr_number }} --json merged -q '.merged')
+          echo "merged=$merged" >> $GITHUB_OUTPUT
+
       - name: Delete branch if PR merged successfully
         if: steps.pr-status.outputs.merged == 'true'
         env:

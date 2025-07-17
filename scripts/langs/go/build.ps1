@@ -9,7 +9,7 @@
     The name of your executable, i.e. ./`$BinName.
 
     .PARAMETER BuildOS
-    The OS to build for. Full ist available at https://github.com/golang/go/blob/master/src/internal/syslist/syslist.go
+    The OS to build for. Full list available at https://github.com/golang/go/blob/master/src/internal/syslist/syslist.go
 
     .PARAMETER BuildArch
     The CPU architecture to build for. A full list does not seem to be available,
@@ -37,11 +37,20 @@ Param(
     $BuildTarget = "./cmd/cli/main.go"
 )
 
+$BuildDate = (Get-Date -Format "yyyy-MM-ddTHH:mm:ssZ")
+
+## Set up ldflags to inject version metadata
+$LdFlags = "-s -w " +
+    "-X `"$ModulePath.Version=$GitVersion`" " +
+    "-X `"$ModulePath.Commit=$GitCommit`" " +
+    "-X `"$ModulePath.Date=$BuildDate`""
+
 Write-Debug "BinName: $BinName"
 Write-Debug "BuildOS: $BuildOS"
 Write-Debug "BuildArch: $BuildArch"
 Write-Debug "BuildOutputDir: $BuildOutputDir"
 Write-Debug "BuildTarget: $BuildTarget"
+Write-Debug "BuildDate: $BuildDate"
 
 if ( $null -eq $BinName ) {
     Write-Warning "No bin name provided, pass the name of your executable using the -BinName flag"
@@ -62,7 +71,7 @@ Write-Debug "Build output: $BuildOutput"
 Write-Host "Building $($BuildTarget), outputting to $($BuildOutput)" -ForegroundColor Cyan
 Write-Information "-- [ Build start"
 try {
-    go build -o $BuildOutput $BuildTarget
+    go build -ldflags "$LdFlags" -o $BuildOutput $BuildTarget
     Write-Host "Build successful" -ForegroundColor Green
 }
 catch {

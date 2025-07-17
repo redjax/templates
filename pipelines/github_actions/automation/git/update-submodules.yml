@@ -89,11 +89,36 @@ jobs:
     needs: update-submodules
     if: needs.update-submodules.outputs.pr_number != ''
     steps:
+
+      ## Use READ-ONLY token for checkout and submodules
+      - uses: actions/checkout@v4
+        with:
+          submodules: false
+          token: ${{ secrets.GH_READONLY_PAT }}
+
       - name: Install GitHub CLI
-        run: sudo apt-get update && sudo apt-get install -y gh
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gh
 
       - name: Auto-merge PR
         env:
           GH_TOKEN: ${{ secrets.GH_READWRITE_PAT }}
         run: |
-          gh pr merge ${{ needs.update-submodules.outputs.pr_number }} --auto --squash
+          gh pr merge ${{ needs.update-file.outputs.pr_number }} --auto --squash || exit 0
+
+      - name: Delete branch if PR merged successfully
+        if: steps.pr-status.outputs.merged == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GH_READWRITE_PAT }}
+        run: |
+          echo "Deleting branch chore/demo-update because PR was merged"
+          gh api -X DELETE repos/$GITHUB_REPOSITORY/git/refs/heads/chore/demo-update
+          if [[ $? != 0 ]]; then
+            echo "[ERROR] Failed to delete branch chore/demo-update"
+            exit $?
+          else
+            echo "Deleted branch chore/demo-update"
+          fi
+
+          exit 0

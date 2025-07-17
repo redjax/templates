@@ -1,0 +1,99 @@
+---
+#####################################################################
+# Automate pulling changes from git submodules & committing changes #
+# to the .gitmodules file.                                          #
+#####################################################################
+name: Update repository submodules
+
+on:
+  ## Manual trigger
+  # workflow_dispatch:
+  ## Scheduled trigger
+  schedule:
+    ## Every 12 hours
+    - cron: "0 0,12 * * *"
+
+jobs:
+  update-submodules:
+    name: Update submodules and create PR if needed
+    runs-on: ubuntu-latest
+    outputs:
+      ## Output PR number for auto-merge job if changes are found
+      pr_number: ${{ steps.create_pr.outputs.pull-request-number }}
+    steps:
+      ## Use READ-ONLY token for checkout and submodules
+      - uses: actions/checkout@v4
+        with:
+          submodules: false
+          token: ${{ secrets.GH_READONLY_PAT }}
+
+      - name: Rewrite submodule URLs to include READ-ONLY PAT and update submodules
+        env:
+          GH_READONLY_PAT: ${{ secrets.GH_READONLY_PAT }}
+        run: |
+          git config --global url."https://${GH_READONLY_PAT}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
+          git submodule sync
+          git submodule update --init --recursive
+
+      ## Run submodules update script
+      - name: Run update submodules script
+        run: |
+          chmod +x ./scripts/update-submodules.sh
+          ./scripts/update-submodules.sh
+
+      ## Check for updated modules
+      - name: Check for changes in ./modules
+        id: changes
+        run: |
+          git add ./modules
+          if git diff --cached --quiet; then
+            echo "changed=false" >> $GITHUB_OUTPUT
+          else
+            echo "changed=true" >> $GITHUB_OUTPUT
+          fi
+
+      ## Commit submodule changes if there are any
+      - name: Commit submodule changes
+        if: steps.changes.outputs.changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "chore(submodules): Update submodules"
+
+      - name: Update README last updated timestamp
+        if: steps.changes.outputs.changed == 'true'
+        run: |
+          timestamp=$(date -u +"%Y-%m-%d %H:%M UTC")
+          sed -i "s/<!--LAST_UPDATED-->.*<!--END_LAST_UPDATED-->/<!--LAST_UPDATED-->${timestamp}<!--END_LAST_UPDATED-->/" README.md
+          git add README.md
+          git commit -m "chore: update last submodule metadata refresh timestamp"
+
+      ## Commit and create PR if there are changes, using READ-WRITE token
+      - name: Commit and create PR if there are changes
+        id: create_pr
+        if: steps.changes.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GH_READWRITE_PAT }}
+          commit-message: "chore(submodules): Update submodules and refresh timestamp"
+          branch: chore/update-submodules
+          base: main
+          title: "chore(submodules): Update submodules"
+          body: "Pulled changes for each git submodule and updated metadata refresh timestamp."
+          add-paths: |
+            ./modules
+            README.md
+
+  auto-merge:
+    runs-on: ubuntu-latest
+    needs: update-submodules
+    if: needs.update-submodules.outputs.pr_number != ''
+    steps:
+      - name: Install GitHub CLI
+        run: sudo apt-get update && sudo apt-get install -y gh
+
+      - name: Auto-merge PR
+        env:
+          GH_TOKEN: ${{ secrets.GH_READWRITE_PAT }}
+        run: |
+          gh pr merge ${{ needs.update-submodules.outputs.pr_number }} --auto --squash

@@ -16,9 +16,22 @@ steps:
       GIT_AUTHOR_EMAIL: "bot@woodpecker.localhost"
       GIT_COMMITTER_NAME: "woodpecker-bot"
       GIT_COMMITTER_EMAIL: "bot@woodpecker.localhost"
+      ## Space-separated list of paths to work on
+      UV_PROJECTS: ". path2 path3"
     commands:
       - git checkout -B chore/bump-dependencies
-      - uv sync --dev --all-extras
+      ## Iterate over directories & run uv sync
+      - |
+        for dir in $UV_PROJECTS; do
+          if [ -d "$dir" ]; then
+            echo "Updating dependencies in $dir"
+            cd "$dir"
+            uv sync --dev --all-extras
+            cd -
+          else
+            echo "Directory $dir does not exist, skipping"
+          fi
+        done
 
   - name: commit-changes
     image: alpine/git:latest

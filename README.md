@@ -24,7 +24,8 @@ A repository for templates I re-use. Most of the files are meant to be copied & 
 
 ## Template Types
 
-| Name      | Path                           | Description                                                                                                                     |
-| --------- | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
-| Pipelines | [`./pipelines/`](./pipelines/) | Templates for pipelines like Github Actions, Drone CI, etc.                                                                     |
+| Name      | Path                           | Description                                                                                                                      |
+| --------- | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
+| Configs   | [`configs/`](./configs/)       | Templates & examples of configurations for apps like Restic/Resticprofile.                                                       |
+| Pipelines | [`./pipelines/`](./pipelines/) | Templates for pipelines like Github Actions, Drone CI, etc.                                                                      |
 | Scripts   | [`./scripts/`](./scripts/)     | Scripts for repo management (i.e. auto Git branch pruning). Subdirectories are scripts for specific languages (Go, Python, etc). |

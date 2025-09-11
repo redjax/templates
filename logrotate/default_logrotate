@@ -1,0 +1,23 @@
+## Place in /etc/logrotate.d/logrotate_name
+#  where 'logrotate_name' is a descriptive name
+#  of the backup creating the logfile, i.e.
+#  /etc/logrotate.d/homedir_backup
+#
+# This logrotate:
+#   - Rotates a logfile at the given path
+#   - Retains 14 rotated logfiles before deleting the oldest
+#   - Compresses old log files with gzip
+#   - Delays compression until next rotation cycle. The most recent log is left uncompressed
+#   - Continues past error of log filepath not existing
+#   - Skips rotation if the logfile is empty
+#   - After rotating, creates new empty logfile with chmod 0640 & root:adm as the owner
+
+/var/log/<optional-subdir>/log_name.log {
+    daily
+    rotate 14
+    compress
+    delaycompress
+    missingok
+    notifempty
+    create 0640 root adm
+}

@@ -1,0 +1,93 @@
+# yaml-language-server: $schema=https://creativeprojects.github.io/resticprofile/jsonschema/config.json
+---
+version: "1"
+
+global:
+  ##  There are many options for default-command, like 'snapshots', 'backup', and 'prune'
+  default-command: backup
+  initialize: false
+  priority: low
+  min-memory: 100
+
+## Defaults that profiles can inherit with 'inherit: default'
+default:
+  repository: "local:/path/to/restic-repo"
+  ## Path to a file containing the path to your restic repository
+  # repository-file: "/path/to/restic_repo_file"
+  ## Command to run to get password (i.e. read from vault)
+  # password-command: ""
+  ## Path to a file with your restic repository password
+  password-file: "/path/to/restic_pw"
+
+  forget:
+    keep-last: 2
+    keep-hourly: 24
+    keep-daily: 7
+    keep-weekly: 4
+    keep-tag:
+      - forever
+    prune: true
+    tag:
+      - resticprofile
+
+  backup:
+    verbose: false
+    one-file-system: false
+    read-concurrency: 2
+    skip-if-unchanged: true
+    exclude:
+      - ".tmp/"
+      - ".cache/"
+    exclude-file:
+      - "/path/to/resticignore"
+    exclude-cloud-files: true
+    # exclude-if-larger-than: ""
+    ## Options are 'host', 'paths', 'tags', and can be combined
+    #  with a comma, like: 'host,paths'
+    group-by: "host,paths"
+
+  check:
+    schedule: "weekly"
+    schedule-after-network-online: false
+    schedule-ignore-on-battery: false
+    schedule-ignore-on-battery-less-than: 20
+    read-data: true
+    with-cache: false
+
+  cache:
+    cleanup: false
+    max-age: 30
+    no-size: false
+
+  no-error-on-warning: true
+
+## Example backup to Backblaze B2
+b2_example:
+  inherit: default
+  repository: "b2:your-bucket:/restic-backups"
+  ## Override default/global password file option.
+  #  Note: you should really use an env var or password-cmd for this. If you do,
+  #  comment this line out
+  password-file: "/path/to/b2_pw"
+  # password-cmd: ""
+  backup:
+    source:
+      - "/some/path/to/backup"
+    exclude:
+      - "*.tmp"
+      - "*.cache"
+      - "cache"
+      - "*.log"
+      - "*.log.*"
+    exclude-file:
+      - "/path/to/restic_b2ignore"
+  ## It's better to set these in environment variables, or to prefix the command
+  #  with vars, i.e. B2_ACCOUNT_ID="..." B2_APPLICATION_KEY="..." resticprofile --name full_backup backup
+  env:
+    B2_ACCOUNT_ID: "..."
+    B2_APPLICATION_KEY: "..."
+
+    ## To load from the environment, use this template syntax
+    #  https://creativeprojects.github.io/resticprofile/configuration/templates/index.html
+    # B2_ACCOUNT_ID: "{{ .Env.MY_CUSTOM_ID }}"
+    # B2_APPLICATION_KEY: "{{ .Env.MY_CUSTOM_KEY }}"

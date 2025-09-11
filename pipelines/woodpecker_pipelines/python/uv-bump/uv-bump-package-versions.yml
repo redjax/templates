@@ -1,0 +1,87 @@
+---
+
+when:
+  event: [manual]
+
+steps:
+  - name: checkout
+    image: woodpeckerci/plugin-git:latest
+    settings:
+      depth: "0"
+
+  - name: update-dependencies
+    image: ghcr.io/astral-sh/uv:latest
+    environment:
+      GIT_AUTHOR_NAME: "woodpecker-bot"
+      GIT_AUTHOR_EMAIL: "bot@woodpecker.localhost"
+      GIT_COMMITTER_NAME: "woodpecker-bot"
+      GIT_COMMITTER_EMAIL: "bot@woodpecker.localhost"
+      ## Space-separated list of paths to work on
+      UV_PROJECTS: ". path2 path3"
+    commands:
+      - git checkout -B chore/bump-dependencies
+      ## Iterate over directories & run uv sync
+      - |
+        for dir in $UV_PROJECTS; do
+          if [ -d "$dir" ]; then
+            echo "Updating dependencies in $dir"
+            cd "$dir"
+            uv sync --dev --all-extras
+            cd -
+          else
+            echo "Directory $dir does not exist, skipping"
+          fi
+        done
+
+  - name: commit-changes
+    image: alpine/git:latest
+    commands:
+      - git add pyproject.toml uv.lock
+      - |
+        if git diff --cached --quiet; then
+          echo "No dependency changes to commit."
+          exit 0
+        else
+          git commit -m "chore(update)"
+        fi
+
+  - name: push-branch
+    image: alpine/git:latest
+    environment:
+      FORGEJO_TOKEN:
+        from_secret: FORGEJO_TOKEN
+    commands:
+      - git push "https://${FORGEJO_TOKEN}@${WOODPECKER_FORGEJO_URL#https://}" chore/bump-dependencies --force
+
+  - name: create-pr
+    image: ghcr.io/holzhaus/forgejo-cli:latest
+    environment:
+      FORGEJO_TOKEN:
+        from_secret: FORGEJO_TOKEN
+      WOODPECKER_FORGEJO_URL: ${WOODPECKER_FORGEJO_URL}
+    commands:
+      - forgejo login add --name ci --url "$WOODPECKER_FORGEJO_URL" --token "$FORGEJO_TOKEN"
+      - PR_NUMBER=$(forgejo pull-request create --head chore/bump-dependencies --base main --title "chore(update)" --body "Automated dependency bump" --output json | jq -r '.number')
+      - echo "Created PR #$PR_NUMBER"
+
+  - name: close-pr
+    image: ghcr.io/holzhaus/forgejo-cli:latest
+    environment:
+      FORGEJO_TOKEN:
+        from_secret: FORGEJO_TOKEN
+      WOODPECKER_FORGEJO_URL: ${WOODPECKER_FORGEJO_URL}
+    commands:
+      - forgejo login add --name ci --url "$WOODPECKER_FORGEJO_URL" --token "$FORGEJO_TOKEN"
+      - PR_NUMBER=$(forgejo pull-request list --state open --head chore/bump-dependencies --output json | jq -r '.[0].number')
+      - forgejo pull-request update --id "$PR_NUMBER" --state closed
+
+  - name: delete-branch
+    image: alpine/git:latest
+    environment:
+      FORGEJO_TOKEN:
+        from_secret: FORGEJO_TOKEN
+    commands:
+      - git checkout main
+      - git branch -D chore/bump-dependencies || true
+      - git push "https://${FORGEJO_TOKEN}@${WOODPECKER_FORGEJO_URL#https://}" --delete chore/bump-dependencies || true
+

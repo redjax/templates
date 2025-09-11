@@ -15,6 +15,15 @@ global:
   ## Restic won't start unless there are at least n MB free of RAM
   min-memory: 100
 
+## Define backup groups. Run resticprofile with -n <group_name>
+#  to run all of the backups in that group
+groups:
+  basic:
+    - home
+
+  full_backup:
+    - home
+
 ## Defaults that profiles can inherit with 'inherit: default'
 default:
   ## Path to your restic repository
@@ -108,15 +117,6 @@ default:
 
   ## Ignore restic warnings when files cannot be read
   no-error-on-warning: true
-
-## Define backup groups. Run resticprofile with -n <group_name>
-#  to run all of the backups in that group
-groups:
-  basic:
-    - home
-
-  full_backup:
-    - home
 
 ## Example backup /home/username directory
 home:

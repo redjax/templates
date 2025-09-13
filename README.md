@@ -27,5 +27,7 @@ A repository for templates I re-use. Most of the files are meant to be copied & 
 | Name      | Path                           | Description                                                                                                                      |
 | --------- | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
 | Configs   | [`configs/`](./configs/)       | Templates & examples of configurations for apps like Restic/Resticprofile.                                                       |
+| Decontainers | [`devcontainers/`](./devcontainers/) | Templates for [Devcontainer](https://containers.dev) |
+| Logrotate | [`logrotate`](./logrotate/) | Templates for Linux's [logrotate](https://linuxconfig.org/logrotate) utility. |
 | Pipelines | [`./pipelines/`](./pipelines/) | Templates for pipelines like Github Actions, Drone CI, etc.                                                                      |
 | Scripts   | [`./scripts/`](./scripts/)     | Scripts for repo management (i.e. auto Git branch pruning). Subdirectories are scripts for specific languages (Go, Python, etc). |

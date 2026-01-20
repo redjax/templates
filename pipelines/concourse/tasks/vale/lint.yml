@@ -1,0 +1,39 @@
+---
+##
+# VERIFIED: FALSE
+#
+# Task to lint writing with Vale (https://vale.sh).
+#
+# Requires a 'repo' input, which is a cloned git repository.
+##
+
+platform: linux
+
+image_resource:
+  type: registry-image
+  source:
+    repository: jdkato/vale
+    tag: latest
+
+inputs:
+  - name: repo
+
+params:
+  ## Path in repository to Vale config
+  VALE_CONFIG: ".vale.ini"
+  ## Optional additional Vale CLI args (https://vale.sh/docs/cli#cli-options)
+  VALE_ARGS: ""
+  ## Path in repository to content Vale should check
+  VALE_PATH: content/
+
+run:
+  path: sh
+  args:
+    - -c
+    - |
+      cd repo
+
+      ## Synch any Vale styles, i.e. in a .styles directory in the repository
+      vale sync
+      ## Run Vale
+      eval vale --config "${VALE_CONFIG}" "${VALE_PATH}" ${VALE_ARGS}

@@ -1,0 +1,50 @@
+---
+##
+# VERIFIED: FALSE
+#
+# Task to render a Hugo site.
+#
+# Requires a 'repo' input, which is a cloned git repository
+# with a Hugo site.
+#
+# The task expects the repository's root directory to be the Hugo site. If
+# your site is nested, i.e. under a src/ directory or somewhere in a monorepo,
+# you will need to use a different task.
+##
+
+platform: linux
+
+image_resource:
+  type: registry-image
+  source:
+    repository: hugomods/hugo
+    ## Override in a pipeline file by setting HUGO_CONTAINER_TAG in the `params:` section,
+    #  or by setting a pipeline parameter with fly -t <target-name> -p <pipeline-name> -c <path/to/pipeline.yml> -v hugo_container_tag=debian-exts
+    tag: ((hugo_container_tag))
+
+params:
+  HUGO_CONTAINER_TAG: debian-exts
+  ## Path where Hugo site builds to in the pipeline.
+  #  Setting to ../ will create artifact dir in the same path as repo/ input
+  OUTPUT_DIR: ../public
+  HUGO_CACHEDIR: /tmp/hugo_cache
+
+inputs:
+  ## Clone a git repo with a `get:` step in the pipeline calling this task.
+  - name: repo
+
+outputs:
+  - name: public
+
+caches:
+  - path: "/tmp/hugo_cache"
+
+run:
+  path: sh
+  args:
+    - -c
+    - |
+      cd repo
+
+      ## Build Hugo site in "production" mode
+      hugo --gc --minify --destination -e prouction "$OUTPUT_DIR"
